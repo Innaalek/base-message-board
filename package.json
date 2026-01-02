@@ -1,0 +1,16 @@
+{
+  "name": "base-message-board",
+  "version": "1.0.0",
+  "private": false,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "latest",
+    "ethers": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  }
+}
