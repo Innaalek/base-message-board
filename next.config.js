@@ -1,6 +1,6 @@
-/** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "standalone",  // говорим Vercel собирать как приложение
   reactStrictMode: true,
-  output: "standalone"
 };
-export default nextConfig;
+
+module.exports = nextConfig;
