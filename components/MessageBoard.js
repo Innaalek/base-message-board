@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 
-const contractAddress = "0x2E1476Ba7D284e931389710904569FFdd1eC10F1"; // потом заменишь на свой из Remix
+const contractAddress = "0x2E1476Ba7D284e931389710904569FFdd1eC10F1";
 const abi = [
   "function postMessage(string _text) external",
   "function getMessagesCount() view returns (uint256)",
