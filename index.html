@@ -7,34 +7,61 @@
 </head>
 <body style="background:#0a0a0f;color:white;font-family:Arial;padding:20px">
 
-<button onclick="connect()" style="width:100%;padding:12px;font-size:18px;border-radius:6px;cursor:pointer">
+<button id="connectBtn" style="width:100%;padding:12px;font-size:18px;border-radius:6px;cursor:pointer">
 Connect MetaMask
 </button>
 
-<textarea id="msg" placeholder="Write something..." style="width:100%;margin-top:12px;padding:10px;border-radius:6px"></textarea>
+<textarea id="msg" placeholder="Write a message to publish on Base..." 
+style="width:100%;margin-top:12px;padding:10px;border-radius:6px;font-size:16px"></textarea>
 
-<button onclick="send()" style="width:100%;margin-top:10px;padding:12px;font-size:18px;border-radius:6px;cursor:pointer">
+<button id="publishBtn" style="width:100%;margin-top:10px;padding:12px;font-size:18px;border-radius:6px;cursor:pointer">
 Publish
 </button>
 
 <script>
-let user;
-const addr = "0x2E1476Ba7D284e931389710904569FFdd1eC10F1";
+const contractAddress = "0x2E1476Ba7D284e931389710904569FFdd1eC10F1";
 const abi = ["function postMessage(string _text) external"];
 
-async function connect() {
-  const a = await ethereum.request({method:"eth_requestAccounts"});
-  user = a[0];
+let userAddress = null;
+
+if (!window.ethereum) {
+  alert("MetaMask not found. Please install it.");
 }
 
-async function send() {
-  if(!user) return alert("Connect wallet first");
-  const s = await new ethers.BrowserProvider(ethereum).getSigner();
-  const c = new ethers.Contract(addr, abi, s);
-  const tx = await c.postMessage(document.getElementById("msg").value);
-  await tx.wait();
-  alert("Message sent on-chain!");
-}
+document.getElementById("connectBtn").addEventListener("click", async () => {
+  try {
+    const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+    userAddress = accounts[0];
+    alert("Wallet connected: " + userAddress);
+  } catch (err) {
+    alert("Connection failed");
+  }
+});
+
+document.getElementById("publishBtn").addEventListener("click", async () => {
+  try {
+    if (!userAddress) {
+      return alert("Connect wallet first");
+    }
+
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const contract = new ethers.Contract(contractAddress, abi, signer);
+
+    const message = document.getElementById("msg").value.trim();
+    if (!message) {
+      return alert("Message cannot be empty");
+    }
+
+    const tx = await contract.postMessage(message);
+    await tx.wait();
+
+    alert("Message successfully published on-chain!");
+  } catch (err) {
+    alert("Publish failed. See console for details.");
+    console.error(err);
+  }
+});
 </script>
 
 </body>
