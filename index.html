@@ -4,22 +4,21 @@
   <meta charset="UTF-8"/>
   <title>Base Message Board</title>
   <script src="https://cdn.ethers.io/lib/ethers-6.7.0.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
 </head>
-<body style="background:#0a0a0f;color:white;font-family:Arial;padding:20px">
-  <h2>Base Message Board</h2>
-
-  <textarea id="msg" rows="3" placeholder="Напиши сообщение..." 
-    style="width:100%;padding:10px;background:#1a1a25;border:1px solid #333;border-radius:8px;color:white"></textarea>
-
-  <button onclick="send()" 
-    style="width:100%;margin-top:10px;padding:12px;border:none;border-radius:8px;font-size:18px;cursor:pointer;background:#2563eb;color:white">
-    Опубликовать
-  </button>
-
-  <p id="count">Загрузка...</p>
-  <div id="latest" style="margin-top:20px;padding:10px;background:#1a1a25;border-radius:8px"></div>
+<body style="margin:0;background:#0a0a0f;color:white;font-family:Arial">
+<div id="app"></div>
 
 <script>
+const e = React.createElement;
+
+function App() {
+  const [account, setAccount] = React.useState(null);
+  const [message, setMessage] = React.useState("");
+  const [count, setCount] = React.useState("0");
+  const [latest, setLatest] = React.useState(null);
+
   const contractAddress = "0x2E1476Ba7D284e931389710904569FFdd1eC10F1";
   const abi = [
     "function postMessage(string _text) external",
@@ -27,44 +26,68 @@
     "function getLatestMessage() view returns (tuple(address user, string text, uint256 timestamp))"
   ];
 
-  async function init() {
-    if (!window.ethereum) {
-      document.getElementById("count").innerText = "Установи MetaMask!";
-      return;
-    }
-
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const contract = new ethers.Contract(contractAddress, abi, provider);
-    
-    const c = await contract.getMessagesCount();
-    document.getElementById("count").innerText = "Всего сообщений: " + c;
-
-    try {
-      const l = await contract.getLatestMessage();
-      document.getElementById("latest").innerHTML = 
-        "<b>Последнее:</b><br>\"" + l.text + "\"<br><small>от " + l.user.slice(0,6) + "...</small>";
-    } catch {
-      document.getElementById("latest").innerHTML = "Пока нет сообщений";
-    }
+  async function connectWallet() {
+    if (!window.ethereum) return alert("MetaMask not found!");
+    const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+    setAccount(accounts[0]);
+    fetchData();
   }
 
-  async function send() {
-    const text = document.getElementById("msg").value.trim();
-    if (!text) return alert("Пустое сообщение!");
+  async function fetchData() {
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const contract = new ethers.Contract(contractAddress, abi, provider);
+    const c = await contract.getMessagesCount();
+    setCount(c.toString());
+    try {
+      const l = await contract.getLatestMessage();
+      setLatest(l);
+    } catch {}
+  }
+
+  async function sendMessage() {
+    if (!account) return alert("Connect wallet first!");
+    if (!message.trim()) return alert("Message is empty!");
 
     const provider = new ethers.BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();
     const contract = new ethers.Contract(contractAddress, abi, signer);
-
-    const tx = await contract.postMessage(text);
+    const tx = await contract.postMessage(message);
     await tx.wait();
-
-    document.getElementById("msg").value = "";
-    init();
+    setMessage("");
+    fetchData();
   }
 
-  window.onload = init;
+  return e("div", {style:{padding:"20px"}},
+    e("button", {
+      onClick: connectWallet,
+      style:{padding:"10px 16px",borderRadius:"6px",fontSize:"16px",cursor:"pointer",marginBottom:"20px"}
+    }, account ? "Wallet: " + account.slice(0,6)+"..." : "Connect MetaMask"),
+
+    e("h2", null, "Post a message"),
+
+    e("textarea", {
+      value: message,
+      onChange: (ev) => setMessage(ev.target.value),
+      rows:3,
+      placeholder:"Type your message here...",
+      style:{width:"100%",padding:"10px",borderRadius:"6px"}
+    }),
+
+    e("button", {
+      onClick: sendMessage,
+      style:{width:"100%",marginTop:"10px",padding:"12px",borderRadius:"6px",fontSize:"18px",cursor:"pointer"}
+    }, "Publish"),
+
+    e("p", {style:{marginTop:"20px"}}, "Total messages (on-chain): " + count),
+
+    latest && e("div", {style:{marginTop:"20px",padding:"10px",background:"#1a1a25",borderRadius:"8px"}},
+      e("p", null, `"${latest.text}"`),
+      e("small", null, "From " + latest.user.slice(0,6)+"... | " + new Date(Number(latest.timestamp)*1000).toLocaleString())
+    )
+  );
+}
+
+ReactDOM.render(e(App), document.getElementById("app"));
 </script>
 </body>
 </html>
-
