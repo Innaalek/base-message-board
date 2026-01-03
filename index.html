@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <title>Base Message Board</title>
+  <script src="https://cdn.ethers.io/lib/ethers-6.7.0.umd.min.js"></script>
+</head>
+<body style="background:#0a0a0f;color:white;font-family:Arial;padding:20px">
+  <h2>Base Message Board</h2>
+
+  <textarea id="msg" rows="3" placeholder="Напиши сообщение..." 
+    style="width:100%;padding:10px;background:#1a1a25;border:1px solid #333;border-radius:8px;color:white"></textarea>
+
+  <button onclick="send()" 
+    style="width:100%;margin-top:10px;padding:12px;border:none;border-radius:8px;font-size:18px;cursor:pointer">
+    Опубликовать
+  </button>
+
+  <p id="count"></p>
+  <div id="latest" style="margin-top:20px;padding:10px;background:#1a1a25;border-radius:8px"></div>
+
+<script>
+  const contractAddress = "0x2E1476Ba7D284e931389710904569FFdd1eC10F1";
+  const abi = [
+    "function postMessage(string _text) external",
+    "function getMessagesCount() view returns (uint256)",
+    "function getLatestMessage() view returns (tuple(address user, string text, uint256 timestamp))"
+  ];
+  let contract;
+
+  async function init() {
+    if (!window.ethereum) return;
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    contract = new ethers.Contract(contractAddress, abi, provider);
+    const c = await contract.getMessagesCount();
+    document.getElementById("count").innerText = "Всего сообщений: " + c;
+    try {
+      const l = await contract.getLatestMessage();
+      document.getElementById("latest").innerHTML = 
+        "<b>Последнее:</b><br>\"" + l.text + "\"<br><small>от " + l.user.slice(0,6) + "...</small>";
+    } catch {}
+  }
+
+  async function send() {
+    if (!window.ethereum) return alert("Нет кошелька");
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const c = new ethers.Contract(contractAddress, abi, signer);
+    const text = document.getElementById("msg").value.trim();
+    if (!text) return;
+    const tx = await c.postMessage(text);
+    await tx.wait();
+    document.getElementById("msg").value = "";
+    init();
+  }
+
+  window.onload = init;
+</script>
+</body>
+</html>
