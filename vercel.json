@@ -1,5 +1,7 @@
 {
-  "builds": [],
+  "framework": null,
+  "buildCommand": "",
+  "outputDirectory": "",
   "routes": [
     { "src": "/(.*)", "dest": "/index.html" }
   ]
