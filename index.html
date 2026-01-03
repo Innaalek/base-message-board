@@ -7,11 +7,17 @@
   <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
 </head>
-<body style="margin:0;background:#0a0a0f;color:white;font-family:Arial">
+<body style="margin:0;background:#0a0a0f;color:white;font-family:Arial;padding:20px">
 <div id="app"></div>
 
 <script>
 const e = React.createElement;
+const contractAddress = "0x2E1476Ba7D284e931389710904569FFdd1eC10F1";
+const abi = [
+  "function postMessage(string _text) external",
+  "function getMessagesCount() view returns (uint256)",
+  "function getLatestMessage() view returns (tuple(address user, string text, uint256 timestamp))"
+];
 
 function App() {
   const [account, setAccount] = React.useState(null);
@@ -19,15 +25,8 @@ function App() {
   const [count, setCount] = React.useState("0");
   const [latest, setLatest] = React.useState(null);
 
-  const contractAddress = "0x2E1476Ba7D284e931389710904569FFdd1eC10F1";
-  const abi = [
-    "function postMessage(string _text) external",
-    "function getMessagesCount() view returns (uint256)",
-    "function getLatestMessage() view returns (tuple(address user, string text, uint256 timestamp))"
-  ];
-
   async function connectWallet() {
-    if (!window.ethereum) return alert("MetaMask not found!");
+    if (!window.ethereum) return alert("MetaMask not found");
     const accounts = await ethereum.request({ method: "eth_requestAccounts" });
     setAccount(accounts[0]);
     fetchData();
@@ -45,9 +44,7 @@ function App() {
   }
 
   async function sendMessage() {
-    if (!account) return alert("Connect wallet first!");
-    if (!message.trim()) return alert("Message is empty!");
-
+    if (!account) return alert("Connect wallet first");
     const provider = new ethers.BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();
     const contract = new ethers.Contract(contractAddress, abi, signer);
@@ -57,30 +54,15 @@ function App() {
     fetchData();
   }
 
-  return e("div", {style:{padding:"20px"}},
-    e("button", {
-      onClick: connectWallet,
-      style:{padding:"10px 16px",borderRadius:"6px",fontSize:"16px",cursor:"pointer",marginBottom:"20px"}
-    }, account ? "Wallet: " + account.slice(0,6)+"..." : "Connect MetaMask"),
-
-    e("h2", null, "Post a message"),
-
-    e("textarea", {
-      value: message,
-      onChange: (ev) => setMessage(ev.target.value),
-      rows:3,
-      placeholder:"Type your message here...",
-      style:{width:"100%",padding:"10px",borderRadius:"6px"}
-    }),
-
-    e("button", {
-      onClick: sendMessage,
-      style:{width:"100%",marginTop:"10px",padding:"12px",borderRadius:"6px",fontSize:"18px",cursor:"pointer"}
-    }, "Publish"),
-
-    e("p", {style:{marginTop:"20px"}}, "Total messages (on-chain): " + count),
-
-    latest && e("div", {style:{marginTop:"20px",padding:"10px",background:"#1a1a25",borderRadius:"8px"}},
+  return e("div", null,
+    e("button", {onClick: connectWallet, style:{padding:"10px 16px",borderRadius:"6px",fontSize:"16px",cursor:"pointer"}},
+      account ? "Wallet: " + account.slice(0,6) + "..." : "Connect MetaMask"
+    ),
+    e("h3", {style:{marginTop:"20px"}}, "Write a message"),
+    e("textarea", {value:message, onChange:(ev)=>setMessage(ev.target.value), rows:3, style:{width:"100%",borderRadius:"6px",padding:"10px",marginTop:"8px"}}),
+    e("button", {onClick:sendMessage, style:{width:"100%",padding:"12px",borderRadius:"6px",fontSize:"18px",cursor:"pointer",marginTop:"10px"}}, "Publish"),
+    e("p", {style:{marginTop:"20px"}}, "Total on-chain messages: " + count),
+    latest && e("div", {style:{background:"#1a1a25",padding:"12px",borderRadius:"8px",marginTop:"12px"}},
       e("p", null, `"${latest.text}"`),
       e("small", null, "From " + latest.user.slice(0,6)+"... | " + new Date(Number(latest.timestamp)*1000).toLocaleString())
     )
